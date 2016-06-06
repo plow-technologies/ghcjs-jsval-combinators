@@ -50,7 +50,9 @@ getPropMaybe' name jsv = do
     else Just <$> fromJSVal mProp
 
 -- useful for creating sum types in FromJSVal
-jsValToHashMap :: (Hashable b, FromJSVal b) => JSVal -> IO (HML.HashMap String b)
+-- need to be able to run HML.member "key" on the resulting value
+-- the second value is not important
+jsValToHashMap :: JSVal -> IO (HML.HashMap String ())
 jsValToHashMap jsv = do
   obj <- js_convertObject jsv
   props <- JSO.listProps obj
@@ -58,14 +60,8 @@ jsValToHashMap jsv = do
     mmVal <- JSO.getProp prop obj
     case isNull mmVal of
       False -> return Nothing
-      True  -> do
-        mVal <- fromJSVal mmVal
-        case mVal of
-          Nothing  -> return Nothing
-          Just val -> return $ Just (JS.unpack prop,val)
-
+      True  -> return $ Just (JS.unpack prop, ())
   return $ HML.fromList $ catMaybes mVals  
-
 
 (.->) :: FromJSVal a => JSVal -> JSString -> MaybeT IO a
 obj .-> name = MaybeT $ getPropMaybe name $ unsafeCoerce obj
