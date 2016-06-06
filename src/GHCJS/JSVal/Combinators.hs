@@ -2,19 +2,25 @@
 
 module GHCJS.JSVal.Combinators where
 
+import           Control.Monad                (forM)
+import           Control.Monad.IO.Class
+import           Control.Monad.Trans.Maybe
+
 import           Data.Aeson
-import qualified Data.JSString                as JS (unpack, length, take, drop)
 import qualified Data.ByteString.Lazy.Char8   as L
+import           Data.Hashable               
+import qualified Data.HashMap.Lazy            as HML
+import           Data.Maybe                   (catMaybes)
+import qualified Data.JSString                as JS (unpack, length, take, drop)
 import           Data.Monoid                  ((<>))
 
-import           Control.Monad.Trans.Maybe
 
 import           GHCJS.Marshal
 import           GHCJS.Types
-import qualified JavaScript.Object          as JSO
+
+import qualified JavaScript.Object            as JSO
 
 import           Unsafe.Coerce
-import           Control.Monad.IO.Class
 
 foreign import javascript unsafe "(function () { var tst = typeof $1; if (tst == \"string\"){ var rslt = JSON.parse($1); return rslt; } else if (tst == \"object\"){ return $1;}} ())"
   js_convertObject :: JSVal -> IO JSO.Object
@@ -42,6 +48,24 @@ getPropMaybe' name jsv = do
   if isNull mProp
     then return . Just $ Nothing
     else Just <$> fromJSVal mProp
+
+-- useful for creating sum types in FromJSVal
+jsValToHashMap :: (Hashable b, FromJSVal b) => JSVal -> IO (HML.HashMap String b)
+jsValToHashMap jsv = do
+  obj <- js_convertObject jsv
+  props <- JSO.listProps obj
+  mVals <- forM props $ \prop -> do
+    mmVal <- JSO.getProp prop obj
+    case isNull mmVal of
+      False -> return Nothing
+      True  -> do
+        mVal <- fromJSVal mmVal
+        case mVal of
+          Nothing  -> return Nothing
+          Just val -> return $ Just (JS.unpack prop,val)
+
+  return $ HML.fromList $ catMaybes mVals  
+
 
 (.->) :: FromJSVal a => JSVal -> JSString -> MaybeT IO a
 obj .-> name = MaybeT $ getPropMaybe name $ unsafeCoerce obj
