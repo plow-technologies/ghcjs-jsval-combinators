@@ -58,9 +58,9 @@ jsValToHashMap jsv = do
   props <- JSO.listProps obj
   mVals <- forM props $ \prop -> do
     mmVal <- JSO.getProp prop obj
-    case isNull mmVal of
-      False -> return Nothing
-      True  -> return $ Just (JS.unpack prop, ())
+    if isNull mmVal
+      then return Nothing
+      else return $ Just (JS.unpack prop, ())
   return $ HML.fromList $ catMaybes mVals  
 
 (.->) :: FromJSVal a => JSVal -> JSString -> MaybeT IO a
