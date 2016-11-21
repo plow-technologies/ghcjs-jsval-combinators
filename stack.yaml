@@ -1,0 +1,33 @@
+resolver: lts-7.8
+compiler: ghcjs-0.2.1.9007008_ghc-8.0.1
+compiler-check: match-exact
+
+setup-info:
+  ghcjs:
+    source:
+      ghcjs-0.2.1.9007008_ghc-8.0.1:
+          url: http://ghcjs.tolysz.org/ghc-8.0-2016-11-07-lts-7.8-9007008.tar.gz
+          sha1: 190300a3725cde44b2a08be9ef829f2077bf8825
+
+packages:
+- '.'
+# ghcjs only
+# stack --compiler ghcjs-0.2.0.20160717_ghc-7.10.3 build
+
+#- location:
+#    git: git@github.com:ghcjs/ghcjs-base.git
+#    commit: 552da6d30fd25857a2ee8eb995d01fd4ae606d22
+#  extra-dep: true
+#- location:
+#    git: git@github.com:ghcjs/ghcjs.git
+#    commit: ce7b5736b53eb34ef5b913efdc560c7dafaf0b79
+#  extra-dep: true
+#  subdirs:
+#  - lib/ghcjs-prim
+
+extra-deps: []
+#- hashable-1.2.4.0
+
+#flags:
+#  hashable:
+#    integer-gmp: false
