@@ -8,7 +8,7 @@ import           Control.Monad.Trans.Maybe
 
 import           Data.Aeson
 import qualified Data.ByteString.Lazy.Char8   as L
-import           Data.Hashable               
+import           Data.Hashable
 import qualified Data.HashMap.Lazy            as HML
 import           Data.Maybe                   (catMaybes)
 import qualified Data.JSString                as JS (unpack, length, take, drop)
@@ -52,6 +52,21 @@ getPropMaybe' name jsv = do
 -- useful for creating sum types in FromJSVal
 -- need to be able to run HML.member "key" on the resulting value
 -- the second value is not important
+
+foreign import javascript unsafe  "Object.keys($1)"
+  js_listObjectKeys :: JSVal -> IO JSVal
+  
+jsValToHashMap :: JSVal -> IO (HML.HashMap String ())
+jsValToHashMap jsv = do
+  jsValProps <- js_listObjectKeys jsv
+  mProps <- fromJSVal jsValProps :: IO (Maybe [String])
+  case mProps of
+    Nothing    -> return $ HML.fromList []
+    Just props -> return $ HML.fromList $ (,) <$> props <*> [()]
+
+-- this is old code, leave for reference for now
+-- for some reason JSO.listProps seems to be broken
+{-
 jsValToHashMap :: JSVal -> IO (HML.HashMap String ())
 jsValToHashMap jsv = do
   obj <- js_convertObject jsv
@@ -61,8 +76,8 @@ jsValToHashMap jsv = do
     if isNull mmVal
       then return Nothing
       else return $ Just (JS.unpack prop, ())
-  return $ HML.fromList $ catMaybes mVals  
-
+  return $ HML.fromList $ catMaybes mVals
+-}
 (.->) :: FromJSVal a => JSVal -> JSString -> MaybeT IO a
 obj .-> name = MaybeT $ getPropMaybe name $ unsafeCoerce obj
 
